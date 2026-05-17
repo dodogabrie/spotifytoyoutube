@@ -74,7 +74,11 @@ web/backend/
     playlists.py            GET /playlists?provider=...
     transfer.py             POST /transfer, GET /transfer/{id}, WS stream
 web/frontend/               Vue 3 SPA — see views/{Home,Login,Playlists,
-                            Transfer,Report}View.vue
+                            Transfer,Report}View.vue.
+                            Visual language documented in
+                            web/frontend/DESIGN.md (read it before
+                            making UI changes or feeding the frontend
+                            to design-aware tools).
 tests/
   unit/                     pure functions + mocked spotipy
   integration/              engine end-to-end (fake adapters) + API smoke
