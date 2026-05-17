@@ -148,6 +148,28 @@ npm run dev                              # Vite on :5173, proxies /api → :8000
 - Don't log raw tokens or device user codes. `core/logging_setup.py` installs
   a regex scrubber; rely on it but don't print secrets unconditionally.
 
+## Driving Claude Design (UI restyling)
+
+Restyling passes on the SPA are run via Anthropic's Claude Design tool,
+not by hand. The frontend has been prepped for it: semantic Tailwind
+tokens (`web/frontend/tailwind.config.js`), reusable components
+(`web/frontend/src/components/`), a brief (`web/frontend/DESIGN.md`)
+and a visual baseline (`docs/screenshots/`, 10 PNGs covering desktop +
+mobile of all 5 routes).
+
+The **operator runbook** for actually driving the tool lives in
+`web/frontend/CLAUDE_DESIGN.md`. It tells you exactly which files to
+upload (or which folders to scope the repo reading to), what to
+deliberately *not* upload, and contains a ready-to-paste prompt with
+the hard constraints already encoded (no flow change, no event-name
+change, dual-brand parity, Tailwind-only, accessibility floor). Keep
+that runbook in sync with `DESIGN.md` whenever tokens or component
+names move.
+
+After a Claude Design pass: `npm run build` in `web/frontend/`,
+`pytest -q` at the root, then re-shoot `docs/screenshots/` so the
+next pass has a fresh baseline.
+
 ## Default assumptions still in force
 
 - Single-user/local tool (web sessions are in-memory).
