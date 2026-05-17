@@ -2,6 +2,9 @@
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import AppCard from '../components/AppCard.vue'
+import AppButton from '../components/AppButton.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -43,66 +46,91 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header>
-      <h1 class="text-2xl font-bold">Connect both accounts</h1>
-      <p class="text-slate-500 mt-1">Authenticate Spotify and YouTube Music to continue.</p>
-    </header>
+  <section class="space-y-8">
+    <PageHeader
+      title="Connect both accounts"
+      subtitle="Authenticate Spotify and YouTube Music to continue."
+    />
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="rounded-xl border border-slate-200 bg-white p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <AppCard padding="lg">
         <div class="flex items-center justify-between">
-          <h2 class="font-semibold">Spotify</h2>
-          <span v-if="authStore.spotifyConnected" class="text-green-600 text-sm">Connected ✓</span>
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-spotify-500" />
+            Spotify
+          </h2>
+          <span v-if="authStore.spotifyConnected" class="text-success-600 text-sm font-medium">
+            Connected
+          </span>
         </div>
-        <p class="text-slate-500 text-sm mt-2">Standard OAuth with PKCE.</p>
-        <button
-          class="mt-4 bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
-          :disabled="authStore.spotifyConnected"
-          @click="connectSpotify"
-        >
-          {{ authStore.spotifyConnected ? 'Connected' : 'Connect Spotify' }}
-        </button>
-      </div>
+        <p class="text-fg-secondary text-sm mt-2">Standard OAuth with PKCE — your token stays in this session.</p>
+        <div class="mt-5">
+          <AppButton
+            tone="spotify"
+            :disabled="authStore.spotifyConnected"
+            @click="connectSpotify"
+          >
+            {{ authStore.spotifyConnected ? 'Connected' : 'Connect Spotify' }}
+          </AppButton>
+        </div>
+      </AppCard>
 
-      <div class="rounded-xl border border-slate-200 bg-white p-6">
+      <AppCard padding="lg">
         <div class="flex items-center justify-between">
-          <h2 class="font-semibold">YouTube Music</h2>
-          <span v-if="authStore.ytmusicConnected" class="text-green-600 text-sm">Connected ✓</span>
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-ytmusic-500" />
+            YouTube Music
+          </h2>
+          <span v-if="authStore.ytmusicConnected" class="text-success-600 text-sm font-medium">
+            Connected
+          </span>
         </div>
-        <p class="text-slate-500 text-sm mt-2">Google device-code flow.</p>
+        <p class="text-fg-secondary text-sm mt-2">Google device-code flow — no third-party password ever entered here.</p>
+
         <template v-if="authStore.deviceFlow">
-          <p class="text-sm mt-3">
-            Open
-            <a class="text-blue-600 underline" :href="authStore.deviceFlow.verification_url" target="_blank">
-              {{ authStore.deviceFlow.verification_url }}
-            </a>
-            and enter:
-          </p>
-          <div class="mt-2 text-2xl font-mono tracking-wider">{{ authStore.deviceFlow.user_code }}</div>
-          <p class="text-slate-500 text-xs mt-1">Waiting for authorization…</p>
+          <div class="mt-5 rounded-card bg-surface-muted p-4">
+            <p class="text-sm">
+              Open
+              <a class="text-info-600 underline break-all" :href="authStore.deviceFlow.verification_url" target="_blank" rel="noopener">
+                {{ authStore.deviceFlow.verification_url }}
+              </a>
+              and enter:
+            </p>
+            <div class="mt-3 text-2xl sm:text-3xl font-mono tracking-[0.4em] text-center py-3 rounded-control bg-surface border border-border">
+              {{ authStore.deviceFlow.user_code }}
+            </div>
+            <p class="text-fg-muted text-xs mt-2 text-center">Waiting for authorization…</p>
+          </div>
         </template>
-        <button
-          v-else
-          class="mt-4 bg-rose-600 text-white px-4 py-2 rounded hover:bg-rose-700"
-          :disabled="authStore.ytmusicConnected"
-          @click="startYTMusic"
-        >
-          {{ authStore.ytmusicConnected ? 'Connected' : 'Connect YouTube Music' }}
-        </button>
-      </div>
+        <div v-else class="mt-5">
+          <AppButton
+            tone="ytmusic"
+            :disabled="authStore.ytmusicConnected"
+            @click="startYTMusic"
+          >
+            {{ authStore.ytmusicConnected ? 'Connected' : 'Connect YouTube Music' }}
+          </AppButton>
+        </div>
+      </AppCard>
     </div>
 
-    <div v-if="error" class="text-red-600 text-sm">{{ error }}</div>
+    <div
+      v-if="error"
+      class="rounded-card border border-danger-200 bg-danger-50 text-danger-700 text-sm px-4 py-3"
+    >
+      {{ error }}
+    </div>
 
-    <div>
-      <button
-        class="bg-slate-900 text-white px-5 py-2 rounded disabled:opacity-40"
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+      <AppButton
         :disabled="!authStore.spotifyConnected || !authStore.ytmusicConnected"
         @click="continueNext"
       >
         Continue
-      </button>
+      </AppButton>
+      <span v-if="!authStore.spotifyConnected || !authStore.ytmusicConnected" class="text-sm text-fg-muted">
+        Both connections are required.
+      </span>
     </div>
   </section>
 </template>

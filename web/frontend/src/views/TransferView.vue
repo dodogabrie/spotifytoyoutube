@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { transfer as transferApi } from '../api/transfer'
+import AppCard from '../components/AppCard.vue'
+import PageHeader from '../components/PageHeader.vue'
+import ProgressBar from '../components/ProgressBar.vue'
 
 const props = defineProps<{ jobId: string }>()
 const router = useRouter()
@@ -56,60 +59,73 @@ function connect() {
   ws.onclose = () => (status.value = 'closed')
 }
 
-const overallPct = computed(() =>
-  overall.value.total ? Math.round((overall.value.current / overall.value.total) * 100) : 0
-)
-const playlistPct = computed(() =>
-  playlist.value.total ? Math.round((playlist.value.current / playlist.value.total) * 100) : 0
-)
-
 onMounted(connect)
 onBeforeUnmount(() => ws?.close())
+
+const statusTone = {
+  connecting: 'bg-warning-500',
+  streaming: 'bg-success-500 animate-pulse',
+  closed: 'bg-fg-muted',
+} as const
+
+const eventTones: Record<string, string> = {
+  track_matched: 'text-success-700',
+  track_unmatched: 'text-warning-700',
+  playlist_started: 'text-info-700',
+  playlist_done: 'text-info-700',
+  job_started: 'text-info-700',
+  job_done: 'text-success-700',
+  error: 'text-danger-700',
+}
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header>
-      <h1 class="text-2xl font-bold">Transferring…</h1>
-      <p class="text-slate-500 text-sm">Job {{ jobId }} ({{ status }})</p>
-    </header>
-
-    <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
-      <div>
-        <div class="flex justify-between text-sm">
-          <span>Overall</span>
-          <span>{{ overall.current }}/{{ overall.total }} ({{ overallPct }}%)</span>
-        </div>
-        <div class="h-2 rounded bg-slate-100 mt-1 overflow-hidden">
-          <div class="h-full bg-emerald-500 transition-all" :style="{ width: overallPct + '%' }" />
-        </div>
-      </div>
-      <div v-if="playlist.name">
-        <div class="flex justify-between text-sm">
-          <span>{{ playlist.name }}</span>
-          <span>{{ playlist.current }}/{{ playlist.total }} ({{ playlistPct }}%)</span>
-        </div>
-        <div class="h-2 rounded bg-slate-100 mt-1 overflow-hidden">
-          <div class="h-full bg-sky-500 transition-all" :style="{ width: playlistPct + '%' }" />
-        </div>
+  <section class="space-y-6 sm:space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <PageHeader title="Transferring…" :subtitle="`Job ${jobId}`" />
+      <div class="flex items-center gap-2 text-sm">
+        <span :class="['h-2 w-2 rounded-full', statusTone[status]]" />
+        <span class="text-fg-secondary capitalize">{{ status }}</span>
       </div>
     </div>
 
-    <div class="rounded-xl border border-slate-200 bg-white">
-      <div class="px-4 py-2 text-sm border-b border-slate-200">Live log</div>
-      <ul class="max-h-80 overflow-y-auto text-sm font-mono">
-        <li v-for="(e, i) in events.slice(-200)" :key="i" class="px-4 py-1 border-b last:border-0 border-slate-100">
-          <span :class="{
-            'text-green-700': e.type === 'track_matched',
-            'text-yellow-700': e.type === 'track_unmatched',
-            'text-blue-700': e.type === 'playlist_started' || e.type === 'playlist_done',
-            'text-red-700': e.type === 'error',
-          }">
+    <AppCard padding="md">
+      <div class="space-y-5">
+        <ProgressBar
+          label="Overall"
+          :current="overall.current"
+          :total="overall.total"
+          tone="spotify"
+        />
+        <ProgressBar
+          v-if="playlist.name"
+          :label="playlist.name"
+          :current="playlist.current"
+          :total="playlist.total"
+          tone="info"
+        />
+      </div>
+    </AppCard>
+
+    <AppCard padding="sm">
+      <div class="px-1 sm:px-2 py-2 text-xs uppercase tracking-wider text-fg-secondary border-b border-divider">
+        Live log
+      </div>
+      <ul class="max-h-[28rem] overflow-y-auto text-sm font-mono">
+        <li
+          v-for="(e, i) in events.slice(-300)"
+          :key="i"
+          class="px-1 sm:px-2 py-1.5 border-b last:border-0 border-divider/60"
+        >
+          <span :class="['inline-block min-w-[140px]', eventTones[e.type] ?? 'text-fg-secondary']">
             [{{ e.type }}]
           </span>
-          {{ e.playlist_name ? `${e.playlist_name} - ` : '' }}{{ e.track_title ?? e.message ?? '' }}
+          <span class="text-fg-primary">
+            {{ e.playlist_name ? `${e.playlist_name} — ` : '' }}{{ e.track_title ?? e.message ?? '' }}
+          </span>
         </li>
+        <li v-if="events.length === 0" class="text-fg-muted text-center py-10">Waiting for events…</li>
       </ul>
-    </div>
+    </AppCard>
   </section>
 </template>
