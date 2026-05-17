@@ -1,0 +1,40 @@
+# Local Docker testing — same image as production, no Cloudflare Tunnel.
+# Exposes the app on http://127.0.0.1:8000 of the host only.
+#
+# Quick start:
+#   cp .env.example .env       # fill Spotify/YT Music creds + APP_SECRET_KEY
+#   docker compose -f docker-compose.local.yml up --build
+#
+# Then open http://127.0.0.1:8000
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spotifytoyoutube:latest
+    container_name: spotifytoyoutube-local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      WEB_STATIC_DIR: /app/web/frontend/dist
+      # Plain HTTP locally -> cookies must NOT be Secure or the browser drops them.
+      SESSION_COOKIE_SECURE: "false"
+      REPORTS_DIR: /data/reports
+      SECRETS_DIR: /data/secrets
+      WEB_CORS_ORIGINS: http://127.0.0.1:8000,http://localhost:8000
+      # Must match a Redirect URI configured in the Spotify dashboard.
+      SPOTIFY_REDIRECT_URI: http://127.0.0.1:8000/api/auth/spotify/callback
+    volumes:
+      - app_data_local:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  app_data_local:

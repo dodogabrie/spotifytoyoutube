@@ -1,0 +1,38 @@
+# VCS
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[codz]
+*.egg-info/
+.venv
+venv
+env
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+
+# Tests / docs (not needed inside the image)
+tests/
+docs/
+
+# Frontend artifacts (rebuilt inside the image)
+web/frontend/node_modules
+web/frontend/dist
+web/frontend/.vite
+
+# Local state
+.env
+.env.*
+!.env.example
+secrets/
+reports/
+oauth.json
+.spotify-cache*
+
+# Editor / OS
+.idea
+.vscode
+.DS_Store
