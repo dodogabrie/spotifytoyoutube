@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific
+reports/
+secrets/
+oauth.json
+.spotify-cache*
+.cache
+
+# Frontend
+web/frontend/node_modules/
+web/frontend/dist/
+web/frontend/.vite/
