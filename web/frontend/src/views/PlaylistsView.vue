@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router'
 import { playlists as playlistsApi, type PlaylistDTO } from '../api/playlists'
 import { transfer as transferApi, type IdempotencyMode } from '../api/transfer'
 import { useTransferStore } from '../stores/transfer'
+import AppCard from '../components/AppCard.vue'
+import AppButton from '../components/AppButton.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 const router = useRouter()
 const store = useTransferStore()
@@ -80,56 +83,103 @@ const idempotencyOptions: { value: IdempotencyMode; label: string }[] = [
   { value: 'replace', label: 'Replace existing (wipe + refill)' },
   { value: 'skip_if_exists', label: 'Skip if exists' },
 ]
+
+const sourceLabel = computed(() => (store.sourceProvider() === 'spotify' ? 'Spotify' : 'YouTube Music'))
+const targetLabel = computed(() => (store.targetProvider() === 'spotify' ? 'Spotify' : 'YouTube Music'))
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header class="flex items-baseline justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">Pick source playlists</h1>
-        <p class="text-slate-500 text-sm">From {{ store.sourceProvider() }} → to {{ store.targetProvider() }}</p>
-      </div>
-      <div class="text-sm text-slate-500">{{ selected.size }} selected</div>
-    </header>
-
-    <div class="rounded-xl border border-slate-200 bg-white p-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-      <input
-        v-model="filter"
-        placeholder="Filter playlists by name"
-        class="border border-slate-300 rounded px-3 py-2 col-span-2"
+  <section class="space-y-6 sm:space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <PageHeader
+        title="Pick source playlists"
+        :subtitle="`From ${sourceLabel} → to ${targetLabel}`"
       />
-      <select v-model="store.idempotency" class="border border-slate-300 rounded px-3 py-2">
-        <option v-for="opt in idempotencyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
+      <div class="text-sm text-fg-secondary">
+        <span class="font-semibold text-fg-primary tabular-nums">{{ selected.size }}</span> selected
+      </div>
     </div>
 
-    <div v-if="loading" class="text-slate-500">Loading…</div>
-    <div v-else-if="error" class="text-red-600">{{ error }}</div>
-    <div v-else class="rounded-xl border border-slate-200 bg-white">
-      <div class="px-4 py-2 border-b border-slate-200 flex items-center gap-3 text-sm">
-        <label class="flex items-center gap-2">
-          <input type="checkbox" :checked="allFilteredSelected" @change="toggleAll" />
+    <AppCard padding="sm">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+        <div class="md:col-span-2 relative">
+          <input
+            v-model="filter"
+            placeholder="Filter playlists by name"
+            class="w-full border border-border rounded-control bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-info-500"
+          />
+        </div>
+        <select
+          v-model="store.idempotency"
+          class="w-full border border-border rounded-control bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-info-500"
+        >
+          <option v-for="opt in idempotencyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+    </AppCard>
+
+    <div v-if="loading" class="text-fg-secondary">Loading playlists…</div>
+    <div
+      v-else-if="error"
+      class="rounded-card border border-danger-200 bg-danger-50 text-danger-700 text-sm px-4 py-3"
+    >
+      {{ error }}
+    </div>
+    <AppCard v-else padding="sm">
+      <div class="px-1 sm:px-2 py-2 flex items-center gap-3 text-sm border-b border-divider">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            class="h-4 w-4 rounded border-border accent-spotify-600"
+            :checked="allFilteredSelected"
+            @change="toggleAll"
+          />
           <span>Select all ({{ filtered.length }})</span>
         </label>
       </div>
-      <ul class="divide-y divide-slate-200">
-        <li v-for="p in filtered" :key="p.id" class="px-4 py-3 flex items-center gap-3">
-          <input type="checkbox" :checked="selected.has(p.id)" @change="toggle(p.id)" />
-          <div class="flex-1">
-            <div class="font-medium">{{ p.name }}</div>
-            <div class="text-xs text-slate-500">{{ p.track_count ?? '?' }} tracks</div>
+      <ul class="divide-y divide-divider">
+        <li
+          v-for="p in filtered"
+          :key="p.id"
+          class="flex items-center gap-3 py-3 px-1 sm:px-2 hover:bg-surface-muted/60 transition rounded"
+        >
+          <input
+            type="checkbox"
+            class="h-4 w-4 rounded border-border accent-spotify-600"
+            :checked="selected.has(p.id)"
+            @change="toggle(p.id)"
+          />
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">{{ p.name }}</div>
+            <div class="text-xs text-fg-secondary">
+              {{ p.track_count ?? '?' }} tracks
+              <span v-if="p.collaborative" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded bg-info-50 text-info-700 text-[10px] uppercase tracking-wide">
+                collab
+              </span>
+              <span v-else-if="p.public === false" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded bg-surface-muted text-fg-secondary text-[10px] uppercase tracking-wide">
+                private
+              </span>
+              <span v-else-if="p.public" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded bg-success-50 text-success-700 text-[10px] uppercase tracking-wide">
+                public
+              </span>
+            </div>
           </div>
         </li>
-        <li v-if="filtered.length === 0" class="px-4 py-6 text-slate-400 text-center">No playlists.</li>
+        <li v-if="filtered.length === 0" class="text-fg-muted text-center py-10">No playlists found.</li>
       </ul>
-    </div>
+    </AppCard>
 
-    <button
-      class="bg-slate-900 text-white px-5 py-2 rounded disabled:opacity-40"
-      :disabled="selected.size === 0 || submitting"
-      @click="startTransfer"
-    >
-      Transfer {{ selected.size }} playlist(s)
-    </button>
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+      <AppButton
+        size="lg"
+        :disabled="selected.size === 0 || submitting"
+        @click="startTransfer"
+      >
+        Transfer {{ selected.size }} playlist{{ selected.size === 1 ? '' : 's' }}
+      </AppButton>
+      <span class="text-sm text-fg-muted">
+        Target: {{ targetLabel }} · Mode: {{ store.idempotency }}
+      </span>
+    </div>
   </section>
 </template>
