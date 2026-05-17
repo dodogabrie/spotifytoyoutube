@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import Cookie, Depends, Header, HTTPException, Response, status
 
+from core.config import get_settings
 from web.backend.sessions import CSRF_COOKIE, SESSION_COOKIE, SessionData, SessionStore, get_store
 
 
@@ -16,13 +17,14 @@ def get_or_create_session(
 ) -> SessionData:
     session = store.get(session_cookie)
     if session is None:
+        secure = get_settings().session_cookie_secure
         session = store.create()
         response.set_cookie(
             key=SESSION_COOKIE,
             value=session.session_id,
             httponly=True,
             samesite="lax",
-            secure=False,  # set True behind HTTPS
+            secure=secure,
             max_age=60 * 60 * 6,
             path="/",
         )
@@ -31,7 +33,7 @@ def get_or_create_session(
             value=session.csrf_token,
             httponly=False,  # readable by JS for double-submit
             samesite="lax",
-            secure=False,
+            secure=secure,
             max_age=60 * 60 * 6,
             path="/",
         )
