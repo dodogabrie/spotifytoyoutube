@@ -22,6 +22,8 @@ class Settings(BaseSettings):
 
     app_secret_key: str = "dev-insecure-change-me"
     web_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    web_static_dir: Path | None = None
+    session_cookie_secure: bool = False
 
     match_score_threshold: float = 0.62
 
